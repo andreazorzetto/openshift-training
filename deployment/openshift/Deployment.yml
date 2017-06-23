@@ -1,0 +1,18 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: caddy-test
+spec:
+  template:
+    metadata:
+      labels:
+        app: caddy-test
+    spec:
+      containers:
+      - name: caddy-test
+        image: IMAGE_ID #Automatically replaced by Jenkins
+        environment:
+          METRICS: 0.0.0.0:9180
+        ports:
+        - containerPort: 3000

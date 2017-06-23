@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: caddy-test-template
+  annotations:
+    description: "myproject service backend"
+objects:
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    name: caddy-test
+    namespace: "${NAMESPACE}"
+  spec:
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: caddy-test
+      spec:
+        containers:
+        - name: caddy-test
+          image: "${DOCKER_IMAGE}"
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 3000
+          env:
+          - name: METRICS
+            value: 0.0.0.0:9180
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 30
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: "caddy-test"
+    namespace: "${NAMESPACE}"
+    labels:
+      app: caddy-test
+    annotations:
+      prometheus.io/port: '9180'
+      prometheus.io/scrape: 'true'
+  spec:
+    type: ClusterIP
+    ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+    selector:
+      app: caddy-test
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: caddy-test
+    namespace: "${NAMESPACE}"
+  spec:
+    to:
+      kind: Service
+      name: caddy-test
+    tls:
+      termination: edge
+parameters:
+- description: Docker image for the service
+  name: DOCKER_IMAGE
+- description: Namespace for the service
+  name: NAMESPACE
